@@ -34,6 +34,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'core',
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -52,6 +53,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -151,3 +153,17 @@ DATABASES = {
     }
 }
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1').split(',')
+
+# 특정 도메인만 허용
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',  # Vue.js 개발 서버
+]
+
+# 모든 도메인 허용 (개발 환경에서만 사용, 프로덕션에서는 비추천)
+# CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",  # CSRF 신뢰 도메인
+]
+
+CORS_ALLOW_CREDENTIALS = True

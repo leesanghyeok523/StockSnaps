@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from core.models import CustomUser
 from core.serializers import CustomUserSerializer
+from django.views.decorators.csrf import csrf_exempt
 
 
 def login_view(request):
@@ -19,6 +20,8 @@ def login_view(request):
         return JsonResponse({'error': 'Invalid credentials'}, status=400)
     return render(request, 'login.html')  # 올바른 템플릿 경로
 
+
+@csrf_exempt
 @api_view(['POST'])
 def signup_view(request):
     """
