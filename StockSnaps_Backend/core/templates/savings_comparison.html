@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Savings Comparison</title>
+</head>
+<body>
+    <h2>Savings Comparison</h2>
+    <form method="POST" action="{% url 'savings' %}">
+        {% csrf_token %}
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" placeholder="Enter amount" required>
+        <label for="term">Term (months):</label>
+        <input type="number" id="term" name="term" placeholder="Enter term" required>
+        <button type="submit">Compare</button>
+    </form>
+
+    <h3>Available Savings Products:</h3>
+    <ul>
+        {% for product in savings %}
+        <li>
+            {{ product.bank_name }} - {{ product.product_name }}<br>
+            Interest Rate: {{ product.interest_rate }}%<br>
+            Term: {{ product.term }} months<br>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

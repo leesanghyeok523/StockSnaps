@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Snaps</title>
+</head>
+<body>
+    <h2>Stock Summary</h2>
+    <form method="POST" action="{% url 'stocks' %}">
+        {% csrf_token %}
+        <input type="text" name="stock_name" placeholder="Enter stock name" required>
+        <button type="submit">Get Summary</button>
+    </form>
+
+    {% if stocks %}
+    <h3>Stock Data:</h3>
+    <ul>
+        {% for stock in stocks %}
+        <li>
+            {{ stock.stock_name }} ({{ stock.ticker_symbol }})<br>
+            Dividend Yield: {{ stock.dividend_yield }}%<br>
+            Performance: {{ stock.performance }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</body>
+</html>
