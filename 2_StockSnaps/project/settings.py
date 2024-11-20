@@ -165,3 +165,12 @@ ACCOUNT_EMAIL_VERIFICATION = 'optional'  # 이메일 인증: none, optional, man
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # FSS API Key
 FSS_API_KEY = config('FSS_API_KEY', default='')
+EXCHANGE_RATE_API_KEY = config('EXCHANGE_RATE_API_KEY', default=None)
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_WHITELIST = [
+    "http://localhost:8080",  # Vue.js 개발 환경
+]
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8080",  # Vue.js와 통신 허용
+]

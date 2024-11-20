@@ -45,3 +45,18 @@ class SavingsProduct(models.Model):
     maturity_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+class Exchange(models.Model):
+    cur_unit = models.CharField(max_length=10)  # 통화 코드 (예: USD, JPY 등)
+    cur_nm = models.CharField(max_length=100)  # 통화 이름 (예: 미국 달러)
+    ttb = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 살 때 환율
+    tts = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 팔 때 환율
+    deal_bas_r = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 기준 환율
+    bkpr = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 장부가격
+    yy_efee_r = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 연 환가료율
+    ten_dd_efee_r = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 10일 환가료율
+    kftc_deal_bas_r = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 서울외국환중개 기준환율
+    kftc_bkpr = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)  # 서울외국환중개 장부가격
+
+    def __str__(self):
+        return f"{self.cur_nm} ({self.cur_unit})"

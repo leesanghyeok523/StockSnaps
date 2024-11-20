@@ -10,6 +10,7 @@ from .views import (
     SavingsProductDetailView,
     FetchDepositProductsView,
     FetchSavingsProductsView,
+    ExchangeRateAPIView,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path('deposits/<int:pk>/', DepositProductDetailView.as_view(), name='deposit-detail'),
     path('savings/', SavingsProductListView.as_view(), name='savings-list'),
     path('savings/<int:pk>/', SavingsProductDetailView.as_view(), name='savings-detail'),
-]
+    path("exchange-rates/", ExchangeRateAPIView.as_view(), name="exchange-rates"),
+    ]

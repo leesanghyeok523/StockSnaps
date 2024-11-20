@@ -1,3 +1,4 @@
+from django.views import View
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.filters import SearchFilter
 from rest_framework.views import APIView
@@ -6,12 +7,20 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from django.shortcuts import get_object_or_404, get_list_or_404
-from .models import DepositProduct, SavingsProduct, User
+from .models import DepositProduct, SavingsProduct, User, Exchange
 from .serializers import DepositProductSerializer, SavingsProductSerializer, UserSerializer
 from django.conf import settings
 import requests
 from decimal import Decimal, InvalidOperation
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
+from django.http import JsonResponse
 
+# CSRF 데코레이터!!!
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class YourView(View):
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({"message": "CSRF token sent!"})
 
 # 단일 객체 조회
 class UserDetailView(APIView):
@@ -280,3 +289,26 @@ class FetchSavingsProductsView(APIView):
             return Decimal(value)
         except (InvalidOperation, ValueError):
             return None
+        
+class ExchangeRateAPIView(APIView):
+    def get(self, request):
+        # 모든 환율 데이터를 반환
+        rates = Exchange.objects.all().values(
+            "cur_unit", "cur_nm", "deal_bas_r", "bkpr", "ttb", "tts"
+        )
+        return Response({"rates": list(rates)})
+
+    def post(self, request):
+        # 두 통화와 금액을 입력받아 환율 계산
+        from_currency = request.data.get("from_currency")
+        to_currency = request.data.get("to_currency")
+        amount = float(request.data.get("amount", 1))
+
+        if not from_currency or not to_currency:
+            return Response({"error": "Both from_currency and to_currency are required."}, status=400)
+
+        from_rate = get_object_or_404(Exchange, cur_unit=from_currency).deal_bas_r
+        to_rate = get_object_or_404(Exchange, cur_unit=to_currency).deal_bas_r
+
+        converted_amount = (amount / from_rate) * to_rate
+        return Response({"converted_amount": converted_amount})
