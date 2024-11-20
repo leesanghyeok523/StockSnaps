@@ -15,6 +15,7 @@ from decimal import Decimal, InvalidOperation
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse
+from django.shortcuts import render
 
 # CSRF 데코레이터!!!
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -312,3 +313,32 @@ class ExchangeRateAPIView(APIView):
 
         converted_amount = (amount / from_rate) * to_rate
         return Response({"converted_amount": converted_amount})
+
+
+def search_nearby_banks(request):
+    location = request.GET.get("location")  # 위도, 경도
+    keyword = request.GET.get("keyword")  # 은행 이름
+    api_key = settings.KAKAO_API_KEY
+
+    if not location or not keyword:
+        return JsonResponse({"error": "Location and keyword are required"}, status=400)
+
+    url = "https://dapi.kakao.com/v2/local/search/keyword.json"
+    headers = {"Authorization": f"KakaoAK {api_key}"}
+    params = {
+        "query": keyword,
+        "x": location.split(",")[0],
+        "y": location.split(",")[1],
+        "radius": 2000,  # 반경 2km
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code != 200:
+        return JsonResponse({"error": "Failed to fetch data from Kakao API"}, status=response.status_code)
+
+    return JsonResponse(response.json(), safe=False)
+
+
+def search_banks(request):
+    return render(request, 'core/templates/core/search_banks.html')
