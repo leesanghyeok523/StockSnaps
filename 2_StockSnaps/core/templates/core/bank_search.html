@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>근처 은행 검색</title>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_API_KEY&libraries=services"></script>
+</head>
+<body>
+    <h1>근처 은행 검색</h1>
+    <div>
+        <input id="latitude" placeholder="위도 (현재 위치 자동 입력)" />
+        <input id="longitude" placeholder="경도 (현재 위치 자동 입력)" />
+        <input id="keyword" placeholder="은행 이름 (예: 우리은행)" />
+        <button onclick="searchBanks()">검색</button>
+    </div>
+    <div id="map" style="width: 100%; height: 400px;"></div>
+    <ul id="bankList"></ul>
+
+    <script>
+        let map;
+        let markers = [];
+
+        // 지도 초기화 및 사용자 현재 위치 가져오기
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
+
+            const mapContainer = document.getElementById("map");
+            const mapOption = {
+                center: new kakao.maps.LatLng(lat, lng),
+                level: 3,
+            };
+            map = new kakao.maps.Map(mapContainer, mapOption);
+        });
+
+        // 은행 검색 함수
+        async function searchBanks() {
+            const latitude = document.getElementById("latitude").value;
+            const longitude = document.getElementById("longitude").value;
+            const keyword = document.getElementById("keyword").value;
+
+            const response = await fetch(`/api/core/search-banks/?latitude=${latitude}&longitude=${longitude}&keyword=${keyword}`);
+            const data = await response.json();
+
+            displayBanks(data.documents);
+        }
+
+        // 은행 정보를 지도와 리스트에 표시
+        function displayBanks(banks) {
+            // 기존 마커 삭제
+            markers.forEach((marker) => marker.setMap(null));
+            markers = [];
+
+            const bankList = document.getElementById("bankList");
+            bankList.innerHTML = "";
+
+            banks.forEach((bank) => {
+                // 지도에 마커 추가
+                const marker = new kakao.maps.Marker({
+                    map: map,
+                    position: new kakao.maps.LatLng(bank.y, bank.x),
+                });
+                markers.push(marker);
+
+                // 리스트에 추가
+                const li = document.createElement("li");
+                li.innerText = `${bank.place_name} - ${bank.road_address_name}`;
+                bankList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

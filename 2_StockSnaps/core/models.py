@@ -60,3 +60,39 @@ class Exchange(models.Model):
 
     def __str__(self):
         return f"{self.cur_nm} ({self.cur_unit})"
+    
+class StockBoard(models.Model):
+    title = models.CharField(max_length=200)  # 게시글 제목
+    content = models.TextField()             # 게시글 내용
+    stock_name = models.CharField(max_length=100)  # 종목명
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)  # 좋아요
+
+    def like_count(self):
+        return self.likes.count()
+
+class Comment(models.Model):
+    post = models.ForeignKey(StockBoard, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Image(models.Model):
+    post = models.ForeignKey(StockBoard, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='images/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+class RealAsset(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='real_assets')
+    category = models.CharField(max_length=50)  # 대출, 예적금, 부동산, 자동차 등
+    name = models.CharField(max_length=100)  # 자산 이름
+    value = models.DecimalField(max_digits=12, decimal_places=2)  # 자산 가치
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Interest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interests')
+    category = models.CharField(max_length=50)  # 예금, 적금, 주식
+    item_id = models.PositiveIntegerField()  # 좋아요 한 상품/주식 ID
+    liked_at = models.DateTimeField(auto_now_add=True)

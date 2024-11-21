@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         params = {
             "authkey": api_key,
-            "searchdate": "20241120",  # 오늘 날짜를 하드코딩 (테스트용)
+            "searchdate": "20241121",  # 오늘 날짜를 하드코딩 (테스트용)
             "data": "AP01"
         }
 

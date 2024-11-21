@@ -35,34 +35,46 @@ class Command(BaseCommand):
                 self.stderr.write(f"Response content: {response.text[:500]}")
                 return
 
-            products = data.get("result", {}).get("baseList", [])
-            if not products:
-                self.stdout.write(f"No products found on page {current_page}.")
-                break
+            # Process baseList (basic product data)
+            base_list = data.get("result", {}).get("baseList", [])
+            for base in base_list:
+                product, created = SavingsProduct.objects.get_or_create(
+                    financial_company_code=base.get("fin_co_no", "Unknown"),
+                    financial_product_code=base.get("fin_prdt_cd", "Unknown"),
+                    defaults={
+                        "financial_product_name": base.get("fin_prdt_nm", "Unknown"),
+                        "join_way": base.get("join_way", "N/A"),
+                        "interest_rate_type": None,
+                        "interest_rate_type_name": None,
+                        "basic_interest_rate": None,
+                        "max_interest_rate": None,
+                        "maturity_amount": self.get_decimal_value(base.get("mtrt_int")),
+                    },
+                )
+                if created:
+                    self.stdout.write(f"Created: {product.financial_product_name}")
+                else:
+                    self.stdout.write(f"Skipped: {product.financial_product_name}")
 
-            for product in products:
-                try:
-                    obj, created = SavingsProduct.objects.get_or_create(
-                        financial_company_code=product.get("fin_co_no", "Unknown"),
-                        financial_product_code=product.get("fin_prdt_cd", "Unknown"),
-                        defaults={
-                            "financial_product_name": product.get("fin_prdt_nm", "Unknown"),
-                            "join_way": product.get("join_way", "N/A"),
-                            "interest_rate_type": product.get("intr_rate_type", "N/A"),
-                            "interest_rate_type_name": product.get("intr_rate_type_nm", "N/A"),
-                            # 숫자로 변환 가능한 값만 저장
-                            "basic_interest_rate": self.get_decimal_value(product.get("intr_rate", 0.0)),
-                            "max_interest_rate": self.get_decimal_value(product.get("intr_rate2", 0.0)),
-                            "maturity_amount": self.get_decimal_value(product.get("mtrt_int", None)),
-                        },
+            # Process optionList (detailed rate data)
+            option_list = data.get("result", {}).get("optionList", [])
+            for option in option_list:
+                product_code = option.get("fin_prdt_cd")
+                saving_product = SavingsProduct.objects.filter(financial_product_code=product_code).first()
+
+                if saving_product:
+                    saving_product.interest_rate_type = option.get("intr_rate_type", "N/A")
+                    saving_product.interest_rate_type_name = option.get("intr_rate_type_nm", "N/A")
+                    saving_product.basic_interest_rate = self.get_decimal_value(option.get("intr_rate", 0.0))
+                    saving_product.max_interest_rate = self.get_decimal_value(option.get("intr_rate2", 0.0))
+                    saving_product.save()
+
+                    self.stdout.write(
+                        f"Updated: {saving_product.financial_product_name} - "
+                        f"Basic Rate: {saving_product.basic_interest_rate}, Max Rate: {saving_product.max_interest_rate}"
                     )
-                    if created:
-                        self.stdout.write(f"Created: {obj.financial_product_name}")
-                    else:
-                        self.stdout.write(f"Skipped: {obj.financial_product_name}")
-                except Exception as e:
-                    self.stderr.write(f"Error saving product {product.get('fin_prdt_nm', 'Unknown')}: {e}")
 
+            # Check if more pages exist
             current_page += 1
             max_page = data.get("result", {}).get("max_page_no", current_page)
             if current_page > max_page:

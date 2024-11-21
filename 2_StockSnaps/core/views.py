@@ -3,12 +3,12 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.filters import SearchFilter
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import status
+from rest_framework import status, viewsets
 from django.shortcuts import get_object_or_404, get_list_or_404
-from .models import DepositProduct, SavingsProduct, User, Exchange
-from .serializers import DepositProductSerializer, SavingsProductSerializer, UserSerializer
+from .models import DepositProduct, SavingsProduct, User, Exchange, StockBoard, Comment, Image, RealAsset, Interest
+from .serializers import DepositProductSerializer, SavingsProductSerializer, UserSerializer, StockBoardSerializer, CommentSerializer, ImageSerializer, RealAssetSerializer, InterestSerializer
 from django.conf import settings
 import requests
 from decimal import Decimal, InvalidOperation
@@ -16,6 +16,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.http import JsonResponse
 from django.shortcuts import render
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import action
 
 # CSRF 데코레이터!!!
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -315,30 +318,90 @@ class ExchangeRateAPIView(APIView):
         return Response({"converted_amount": converted_amount})
 
 
-def search_nearby_banks(request):
-    location = request.GET.get("location")  # 위도, 경도
-    keyword = request.GET.get("keyword")  # 은행 이름
-    api_key = settings.KAKAO_API_KEY
+# class SearchBanksView(APIView):
+#     permission_classes = [IsAuthenticated]
 
-    if not location or not keyword:
-        return JsonResponse({"error": "Location and keyword are required"}, status=400)
+#     def get(self, request):
+#         latitude = request.query_params.get("latitude")
+#         longitude = request.query_params.get("longitude")
+#         keyword = request.query_params.get("keyword")
 
-    url = "https://dapi.kakao.com/v2/local/search/keyword.json"
-    headers = {"Authorization": f"KakaoAK {api_key}"}
-    params = {
-        "query": keyword,
-        "x": location.split(",")[0],
-        "y": location.split(",")[1],
-        "radius": 2000,  # 반경 2km
-    }
+#         if not latitude or not longitude or not keyword:
+#             return Response({"error": "latitude, longitude, and keyword are required."}, status=400)
 
-    response = requests.get(url, headers=headers, params=params)
+#         url = "https://dapi.kakao.com/v2/local/search/keyword.json"
+#         headers = {
+#             "Authorization": f"KakaoAK {settings.KAKAO_API_KEY}"
+#         }
+#         params = {
+#             "query": keyword,
+#             "x": longitude,
+#             "y": latitude,
+#             "radius": 500
+#         }
 
-    if response.status_code != 200:
-        return JsonResponse({"error": "Failed to fetch data from Kakao API"}, status=response.status_code)
+#         try:
+#             response = requests.get(url, headers=headers, params=params)
+#             print("응답 상태 코드:", response.status_code)
+#             print("응답 본문:", response.text)
+            
+#             if response.status_code == 200:
+#                 return Response(response.json())
+#             else:
+#                 return Response({"error": f"Kakao API 요청 실패: {response.status_code}"}, status=response.status_code)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=500)
 
-    return JsonResponse(response.json(), safe=False)
+class StockBoardViewSet(viewsets.ModelViewSet):
+    queryset = StockBoard.objects.all().order_by('-created_at')
+    serializer_class = StockBoardSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
-def search_banks(request):
-    return render(request, 'core/templates/core/search_banks.html')
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        post = self.get_object()
+        if request.user in post.likes.all():
+            post.likes.remove(request.user)
+        else:
+            post.likes.add(request.user)
+        return Response({'status': 'like toggled', 'likes_count': post.like_count()})
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+class ImageUploadViewSet(viewsets.ModelViewSet):
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class RealAssetViewSet(viewsets.ModelViewSet):
+    serializer_class = RealAssetSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return RealAsset.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class InterestViewSet(viewsets.ModelViewSet):
+    serializer_class = InterestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Interest.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

@@ -174,4 +174,4 @@ CORS_ORIGIN_WHITELIST = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",  # Vue.js와 통신 허용
 ]
-KAKAO_API_KEY = config('KAKAO_API_KEY', default='')
+KAKAO_API_KEY = config('KAKAO_API_KEY')
